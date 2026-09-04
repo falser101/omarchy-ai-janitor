@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.falser101.ai-janitor",
+  "name": "AI Janitor",
+  "version": "1.0.0",
+  "author": "falser101",
+  "license": "MIT",
+  "description": "See and trash reclaimable AI-tool caches, leftover installs, and optional session/model data.",
+  "homepage": "https://github.com/falser101/omarchy-ai-janitor",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "AI Janitor",
+    "description": "Reclaimable AI tool data on the bar; click to review and trash.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "refreshIntervalSec": 600
+    },
+    "schema": [
+      {
+        "key": "refreshIntervalSec",
+        "type": "integer",
+        "label": "Refresh interval (seconds)",
+        "min": 30,
+        "max": 3600,
+        "step": 30,
+        "defaultValue": 600
+      }
+    ]
+  },
+  "tags": ["ai", "disk", "cleanup", "cache"]
+}

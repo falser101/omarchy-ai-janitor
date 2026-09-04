@@ -1,0 +1,495 @@
+{
+  "version": 1,
+  "tools": [
+    {
+      "id": "grok",
+      "name": "Grok Build",
+      "status": "active",
+      "detect": { "binaries": ["grok"] },
+      "items": [
+        {
+          "id": "grok-downloads",
+          "class": "cache",
+          "summary": "Old installer packages",
+          "summary_zh": "旧安装包",
+          "paths": ["~/.grok/downloads"]
+        },
+        {
+          "id": "grok-memtrace",
+          "class": "cache",
+          "summary": "Debug traces",
+          "summary_zh": "调试轨迹",
+          "paths": ["~/.grok/memtrace"]
+        },
+        {
+          "id": "grok-sessions",
+          "class": "review",
+          "summary": "Chat session history",
+          "summary_zh": "聊天会话记录",
+          "paths": ["~/.grok/sessions"]
+        },
+        {
+          "id": "grok-auth",
+          "class": "secret",
+          "summary": "Auth token",
+          "paths": ["~/.grok/auth.json"]
+        }
+      ]
+    },
+    {
+      "id": "grok-desktop",
+      "name": "Grok Desktop",
+      "status": "active",
+      "items": [
+        {
+          "id": "grok-build-desktop-cache",
+          "class": "cache",
+          "summary": "Chromium cache",
+          "summary_zh": "桌面端网页缓存",
+          "paths": [
+            "~/.config/grok-build-desktop/Cache",
+            "~/.config/grok-build-desktop/Code Cache",
+            "~/.config/grok-build-desktop/GPUCache"
+          ]
+        },
+        {
+          "id": "grok-app-webkit",
+          "class": "cache",
+          "summary": "WebKit cache",
+          "summary_zh": "WebKit 缓存",
+          "paths": [
+            "~/.local/share/com.grokapp.desktop/**/WebKitCache",
+            "~/.local/share/com.grokapp.desktop.dev/**/WebKitCache",
+            "~/.local/share/ai.x.grok.desktop/**/WebKitCache",
+            "~/.local/share/ai.x.grok.desktop.tauri/**/WebKitCache"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cursor",
+      "name": "Cursor",
+      "status": "active",
+      "detect": { "binaries": ["cursor"] },
+      "items": [
+        {
+          "id": "cursor-cache",
+          "class": "cache",
+          "summary": "IDE cache and snapshots",
+          "summary_zh": "IDE 缓存和快照",
+          "paths": [
+            "~/.config/Cursor/Cache",
+            "~/.config/Cursor/CachedData",
+            "~/.config/Cursor/Code Cache",
+            "~/.config/Cursor/GPUCache",
+            "~/.config/Cursor/CachedExtensionVSIXs"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "claude",
+      "name": "Claude Code",
+      "status": "active",
+      "detect": { "binaries": ["claude"] },
+      "items": [
+        {
+          "id": "claude-file-history",
+          "class": "cache",
+          "summary": "Paste and file history",
+          "summary_zh": "粘贴/文件历史",
+          "paths": ["~/.claude/file-history"]
+        },
+        {
+          "id": "claude-cli-cache",
+          "class": "cache",
+          "summary": "CLI node cache",
+          "summary_zh": "CLI 缓存",
+          "paths": ["~/.cache/claude-cli-nodejs"]
+        },
+        {
+          "id": "claude-projects",
+          "class": "review",
+          "summary": "Project transcripts",
+          "summary_zh": "项目会话记录",
+          "paths": ["~/.claude/projects"]
+        },
+        {
+          "id": "claude-auth",
+          "class": "secret",
+          "summary": "Credentials",
+          "paths": ["~/.claude/.credentials.json", "~/.claude.json"]
+        }
+      ]
+    },
+    {
+      "id": "codex",
+      "name": "Codex",
+      "status": "active",
+      "detect": { "binaries": ["codex"] },
+      "items": [
+        {
+          "id": "codex-tmp",
+          "class": "cache",
+          "summary": "Temporary files",
+          "summary_zh": "临时文件",
+          "paths": ["~/.codex/.tmp"]
+        },
+        {
+          "id": "codex-logs",
+          "class": "cache",
+          "summary": "Log database",
+          "summary_zh": "日志库",
+          "paths": ["~/.codex/logs_2.sqlite", "~/.codex/logs_2.sqlite-wal", "~/.codex/logs_2.sqlite-shm"]
+        },
+        {
+          "id": "codex-sessions",
+          "class": "review",
+          "summary": "Session transcripts",
+          "summary_zh": "会话记录",
+          "paths": ["~/.codex/sessions"]
+        },
+        {
+          "id": "codex-auth",
+          "class": "secret",
+          "summary": "Auth token",
+          "paths": ["~/.codex/auth.json"]
+        }
+      ]
+    },
+    {
+      "id": "workbuddy",
+      "name": "WorkBuddy",
+      "status": "active",
+      "items": [
+        {
+          "id": "workbuddy-logs",
+          "class": "cache",
+          "summary": "Logs",
+          "summary_zh": "日志",
+          "paths": ["~/.workbuddy/logs"]
+        },
+        {
+          "id": "workbuddy-key",
+          "class": "secret",
+          "summary": "Key fallback",
+          "paths": ["~/.workbuddy-key-fallback"]
+        }
+      ]
+    },
+    {
+      "id": "cc-switch",
+      "name": "cc-switch",
+      "status": "active",
+      "items": [
+        {
+          "id": "cc-switch-backups",
+          "class": "cache",
+          "summary": "Old config backups",
+          "summary_zh": "旧配置备份",
+          "paths": ["~/.cc-switch/backups"]
+        }
+      ]
+    },
+    {
+      "id": "hermes",
+      "name": "Hermes",
+      "status": "stale",
+      "detect": { "binaries": ["hermes"] },
+      "items": [
+        {
+          "id": "hermes-node-modules",
+          "class": "cache",
+          "summary": "Rebuildable node_modules",
+          "summary_zh": "可重建的 node_modules",
+          "paths": ["~/.hermes/hermes-agent/node_modules"]
+        },
+        {
+          "id": "hermes-qa-go",
+          "class": "cache",
+          "summary": "Copied Go toolchain in qa profile",
+          "summary_zh": "qa profile 里拷的 Go",
+          "paths": ["~/.hermes/profiles/qa/home/go"]
+        },
+        {
+          "id": "hermes-snapshots",
+          "class": "cache",
+          "summary": "Pre-update state snapshots",
+          "summary_zh": "升级前快照",
+          "paths": ["~/.hermes/state-snapshots"]
+        },
+        {
+          "id": "hermes-chrome-debug",
+          "class": "cache",
+          "summary": "Embedded Chrome debug cache",
+          "summary_zh": "内嵌 Chrome 缓存",
+          "paths": ["~/.hermes/chrome-debug"]
+        },
+        {
+          "id": "hermes-auth",
+          "class": "secret",
+          "summary": "Auth and env",
+          "paths": ["~/.hermes/auth.json", "~/.hermes/.env"]
+        }
+      ]
+    },
+    {
+      "id": "openclaw",
+      "name": "OpenClaw",
+      "status": "stale",
+      "detect": { "binaries": ["openclaw"] },
+      "items": [
+        {
+          "id": "openclaw-clobbered",
+          "class": "cache",
+          "summary": "Clobbered config fragments",
+          "summary_zh": "覆盖残留的配置碎片",
+          "paths": ["~/.openclaw/openclaw.json.clobbered.*"]
+        },
+        {
+          "id": "openclaw-old-runtime",
+          "class": "cache",
+          "summary": "Older plugin runtime copy",
+          "summary_zh": "旧的运行时副本",
+          "paths": ["~/.openclaw/plugin-runtime-deps/openclaw-2026.4.26-*"]
+        },
+        {
+          "id": "openclaw-logs",
+          "class": "cache",
+          "summary": "Audit logs",
+          "summary_zh": "审计日志",
+          "paths": ["~/.openclaw/logs"]
+        },
+        {
+          "id": "openclaw-secrets",
+          "class": "secret",
+          "summary": "Config and credentials",
+          "paths": ["~/.openclaw/openclaw.json", "~/.openclaw/credentials", "~/.openclaw/identity"]
+        }
+      ]
+    },
+    {
+      "id": "claude-code-router",
+      "name": "Claude Code Router",
+      "status": "stale",
+      "detect": { "binaries": ["ccr"] },
+      "items": [
+        {
+          "id": "ccr-logs",
+          "class": "cache",
+          "summary": "Router logs",
+          "summary_zh": "路由日志",
+          "paths": ["~/.claude-code-router/logs"]
+        }
+      ]
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini / Antigravity",
+      "status": "stale",
+      "detect": { "binaries": ["gemini"] },
+      "items": [
+        {
+          "id": "gemini-tmp",
+          "class": "cache",
+          "summary": "Temporary files",
+          "summary_zh": "临时文件",
+          "paths": ["~/.gemini/tmp", "~/.antigravity-ide/Cache", "~/.antigravity-ide/CachedData", "~/.antigravity-ide/GPUCache"]
+        }
+      ]
+    },
+    {
+      "id": "qwen",
+      "name": "Qwen Code",
+      "status": "stale",
+      "detect": { "binaries": ["qwen"] },
+      "items": [
+        {
+          "id": "qwen-projects",
+          "class": "review",
+          "summary": "Project sessions",
+          "summary_zh": "项目会话",
+          "paths": ["~/.qwen/projects"]
+        }
+      ]
+    },
+    {
+      "id": "ollama",
+      "name": "Ollama",
+      "status": "uninstalled",
+      "detect": { "binaries": ["ollama"] },
+      "items": [
+        {
+          "id": "ollama-models",
+          "class": "review",
+          "summary": "Local models (offline Qwen gone if deleted)",
+          "summary_zh": "本地模型（删了就不能离线跑 Qwen）",
+          "paths": ["~/.ollama"]
+        }
+      ]
+    },
+    {
+      "id": "huggingface",
+      "name": "Hugging Face cache",
+      "status": "uninstalled",
+      "items": [
+        {
+          "id": "huggingface-whisper",
+          "class": "review",
+          "summary": "Whisper / transformer model cache",
+          "summary_zh": "Whisper 等模型缓存",
+          "paths": ["~/.cache/huggingface"]
+        }
+      ]
+    },
+    {
+      "id": "trae",
+      "name": "Trae",
+      "status": "uninstalled",
+      "detect": { "binaries": ["trae"] },
+      "items": [
+        {
+          "id": "trae-cn",
+          "class": "stale",
+          "summary": "Trae CN data (extensions)",
+          "summary_zh": "Trae 国区数据",
+          "paths": ["~/.trae-cn"]
+        },
+        {
+          "id": "trae-intl",
+          "class": "stale",
+          "summary": "Trae international data",
+          "summary_zh": "Trae 国际版数据",
+          "paths": ["~/.trae"]
+        }
+      ]
+    },
+    {
+      "id": "qoder",
+      "name": "Qoder",
+      "status": "uninstalled",
+      "detect": { "binaries": ["qoder"] },
+      "items": [
+        {
+          "id": "qoder-dir",
+          "class": "stale",
+          "summary": "Qoder data directory",
+          "summary_zh": "Qoder 数据目录",
+          "paths": ["~/.qoder", "~/.qoder.json"]
+        }
+      ]
+    },
+    {
+      "id": "codebuddy",
+      "name": "CodeBuddy",
+      "status": "uninstalled",
+      "items": [
+        {
+          "id": "codebuddy-dir",
+          "class": "stale",
+          "summary": "CodeBuddy data",
+          "summary_zh": "CodeBuddy 数据",
+          "paths": ["~/.codebuddy"]
+        },
+        {
+          "id": "codebuddycn-dir",
+          "class": "stale",
+          "summary": "CodeBuddy CN data",
+          "summary_zh": "CodeBuddy 国区数据",
+          "paths": ["~/.codebuddycn"]
+        }
+      ]
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek",
+      "status": "uninstalled",
+      "items": [
+        {
+          "id": "deepseek-dir",
+          "class": "stale",
+          "summary": "DeepSeek snapshots and sessions",
+          "summary_zh": "DeepSeek 快照和会话",
+          "paths": ["~/.deepseek"]
+        }
+      ]
+    },
+    {
+      "id": "mempalace",
+      "name": "MemPalace",
+      "status": "uninstalled",
+      "items": [
+        {
+          "id": "mempalace-dir",
+          "class": "review",
+          "summary": "Memory palace (not recoverable)",
+          "summary_zh": "记忆库（删了找不回）",
+          "paths": ["~/.mempalace"]
+        }
+      ]
+    },
+    {
+      "id": "zeroclaw",
+      "name": "ZeroClaw",
+      "status": "uninstalled",
+      "items": [
+        {
+          "id": "zeroclaw-dir",
+          "class": "stale",
+          "summary": "ZeroClaw data",
+          "summary_zh": "ZeroClaw 数据",
+          "paths": ["~/.zeroclaw"]
+        }
+      ]
+    },
+    {
+      "id": "leftovers",
+      "name": "Leftovers",
+      "status": "uninstalled",
+      "items": [
+        {
+          "id": "function-router-bak",
+          "class": "stale",
+          "summary": "function-router backup",
+          "summary_zh": "function-router 旧备份",
+          "paths": ["~/.function-router.bak.2026-06-12"]
+        },
+        {
+          "id": "antigravity-empty",
+          "class": "stale",
+          "summary": "Empty Antigravity shell",
+          "summary_zh": "空的 Antigravity 目录",
+          "paths": ["~/.antigravity"]
+        },
+        {
+          "id": "ai-completion",
+          "class": "stale",
+          "summary": "JetBrains AI completion traces",
+          "summary_zh": "JetBrains 补全痕迹",
+          "paths": ["~/.ai_completion"]
+        },
+        {
+          "id": "cursor-free-data",
+          "class": "stale",
+          "summary": "Cursor free-data leftover",
+          "summary_zh": "Cursor 残留小文件",
+          "paths": ["~/.cursor_free_data"]
+        },
+        {
+          "id": "apifox-debugger",
+          "class": "stale",
+          "summary": "Apifox AI debugger settings",
+          "summary_zh": "Apifox 调试器设置",
+          "paths": ["~/.apifox-ai-agent-debugger"]
+        },
+        {
+          "id": "scfdebug",
+          "class": "stale",
+          "summary": "scfdebug config",
+          "summary_zh": "scfdebug 配置",
+          "paths": ["~/.scfdebug"]
+        }
+      ]
+    }
+  ]
+}
