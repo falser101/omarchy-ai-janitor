@@ -27,9 +27,11 @@
 AI coding tools leave caches, old runtimes, clobbered config fragments, uninstalled IDE trees, and sometimes local models. This repo turns that inventory into:
 
 - **`ai-janitor`** — scan, dry-run, then `gio trash`
-- **Omarchy bar widget** — shows reclaimable cache size; click to tick items and confirm
+- **Omarchy bar widget** — shows reclaimable cache size; click to pick a class, toggle a tool, expand for per-path detail
 
 The catalog is the source of truth (`catalog.json`). Secret/config paths are listed so they can be *refused*, never offered.
+
+The panel opens on **Cache**. **Uninstalled** and **Review** are separate tabs. Each tool is one row with a master switch; tools with several paths expand for fine selection. Cache items are pre-checked; the other tabs are not.
 
 Deletion always goes to Trash. There is no `rm -rf` fallback.
 

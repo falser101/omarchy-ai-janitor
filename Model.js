@@ -51,7 +51,10 @@ function strings(localeName) {
     cancel: zh ? "取消" : "Cancel",
     warningReview: zh ? "会话、模型和记忆删了可能找不回。" : "Sessions, models, and memory may be unrecoverable.",
     done: zh ? "已送进回收站" : "Moved to trash",
-    error: zh ? "清理失败" : "Clean failed"
+    error: zh ? "清理失败" : "Clean failed",
+    emptyCache: zh ? "没有可回收的缓存" : "No reclaimable cache",
+    emptyStale: zh ? "没有已卸工具的数据" : "No leftover tool data",
+    emptyReview: zh ? "没有需要确认的数据" : "Nothing in review"
   }
 }
 
@@ -118,4 +121,79 @@ function classLabel(strings, className) {
   if (className === "stale") return strings.stale
   if (className === "review") return strings.review
   return className
+}
+
+function emptyForClass(strings, className) {
+  if (className === "cache") return strings.emptyCache
+  if (className === "stale") return strings.emptyStale
+  if (className === "review") return strings.emptyReview
+  return strings.empty
+}
+
+function classBytes(report, className) {
+  var totals = report && report.totals ? report.totals : {}
+  if (className === "cache") return Number(totals.reclaimableCache || 0)
+  if (className === "stale") return Number(totals.reclaimableStale || 0)
+  if (className === "review") return Number(totals.reclaimableReview || 0)
+  return 0
+}
+
+function tabModel(strings, report) {
+  return [
+    { value: "cache", label: strings.cache + "  " + formatBytes(classBytes(report, "cache")) },
+    { value: "stale", label: strings.stale + "  " + formatBytes(classBytes(report, "stale")) },
+    { value: "review", label: strings.review + "  " + formatBytes(classBytes(report, "review")) }
+  ]
+}
+
+function groupsForClass(rows, className) {
+  var groups = []
+  var indexById = {}
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i]
+    if (!row || row.className !== className) continue
+    var key = String(row.toolId || "")
+    if (indexById[key] === undefined) {
+      indexById[key] = groups.length
+      groups.push({
+        toolId: key,
+        toolName: String(row.toolName || key),
+        bytes: 0,
+        items: []
+      })
+    }
+    var group = groups[indexById[key]]
+    group.items.push(row)
+    group.bytes += Number(row.bytes || 0)
+  }
+  groups.sort(function(a, b) { return b.bytes - a.bytes })
+  return groups
+}
+
+function toolAllSelected(group, selected) {
+  var items = group && group.items ? group.items : []
+  if (items.length === 0) return false
+  for (var i = 0; i < items.length; i++) {
+    if (!selected || !selected[items[i].id]) return false
+  }
+  return true
+}
+
+function toolAnySelected(group, selected) {
+  var items = group && group.items ? group.items : []
+  for (var i = 0; i < items.length; i++) {
+    if (selected && selected[items[i].id]) return true
+  }
+  return false
+}
+
+function toggleToolSelection(group, selected) {
+  var next = {}
+  if (selected) {
+    for (var key in selected) next[key] = selected[key]
+  }
+  var all = toolAllSelected(group, selected)
+  var items = group && group.items ? group.items : []
+  for (var i = 0; i < items.length; i++) next[items[i].id] = !all
+  return next
 }

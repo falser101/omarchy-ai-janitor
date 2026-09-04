@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "author": "falser101",
   "license": "MIT",
-  "description": "See and trash reclaimable AI-tool caches, leftover installs, and optional session/model data.",
+  "description": "See and trash reclaimable AI-tool caches, leftover installs, and optional session/model data. Cache / uninstalled / review tabs; per-tool switches.",
   "homepage": "https://github.com/falser101/omarchy-ai-janitor",
   "kinds": ["bar-widget"],
   "entryPoints": {
