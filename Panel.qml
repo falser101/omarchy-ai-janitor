@@ -27,7 +27,11 @@ Panel {
     var _ = janitor.reportRevision
     return Model.tabModel(root.strings, janitor.report)
   }
-  readonly property var groups: Model.groupsForClass(root.rows, root.activeClass)
+  readonly property var groups: {
+    var _ = janitor.reportRevision
+    var __ = root.activeClass
+    return Model.groupsForClass(root.rows, root.activeClass)
+  }
 
   property string activeClass: "cache"
   property var selected: ({})
@@ -310,10 +314,7 @@ Panel {
           PanelHero {
             width: parent.width
             title: root.strings.title
-            meta: janitor.loading
-              ? root.strings.scanning
-              : (Model.formatBytes(Model.classBytes(janitor.report, root.activeClass))
-                + " · " + Model.classLabel(root.strings, root.activeClass))
+            meta: janitor.loading ? root.strings.scanning : Model.classLabel(root.strings, root.activeClass)
             foreground: root.foreground
             fontFamily: root.fontFamily
             iconComponent: Component {
@@ -326,42 +327,76 @@ Panel {
             }
           }
 
-          Row {
+          RowLayout {
             id: classSwitch
             width: parent.width
-            spacing: Style.spacing.md
-            readonly property real cellWidth: root.tabs.length > 0
-              ? (width - spacing * (root.tabs.length - 1)) / root.tabs.length
-              : 0
+            height: Style.space(56)
+            spacing: Style.space(8)
 
             Repeater {
-              model: root.tabs
+              model: ["cache", "stale", "review"]
 
-              Button {
-                required property var modelData
+              CursorSurface {
+                required property string modelData
                 required property int index
-                width: classSwitch.cellWidth
-                text: modelData.label
-                selected: root.activeClass === modelData.value
+                Layout.fillWidth: true
+                Layout.minimumWidth: Style.space(96)
+                Layout.preferredHeight: Style.space(56)
+                implicitHeight: Style.space(56)
+                current: root.activeClass === modelData
                 hasCursor: root.cursorActive && root.focusSection === "tabs" && root.tabIndex === index
                 bordered: true
                 foreground: root.foreground
-                fontFamily: root.fontFamily
-                fontSize: Style.font.bodySmall
-                verticalPadding: Style.spacing.controlPaddingY
-                onClicked: {
-                  root.cursorActive = true
-                  root.focusSection = "tabs"
-                  root.selectClass(modelData.value)
-                }
-                onHovered: function(isHovered) {
-                  if (isHovered) {
+                radius: Style.cornerRadius
+
+                MouseArea {
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    root.cursorActive = true
+                    root.focusSection = "tabs"
+                    root.selectClass(modelData)
+                  }
+                  onEntered: {
                     root.cursorActive = true
                     root.focusSection = "tabs"
                   }
                 }
+
+                Column {
+                  anchors.centerIn: parent
+                  spacing: Style.space(2)
+
+                  Text {
+                    width: classSwitch.width / 3 - Style.space(12)
+                    text: Model.classLabel(root.strings, modelData)
+                    color: root.foreground
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.body
+                    font.bold: root.activeClass === modelData
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                  }
+
+                  Text {
+                    width: classSwitch.width / 3 - Style.space(12)
+                    text: Model.formatBytes(Model.classBytes(janitor.report, modelData))
+                    color: root.dim
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.caption
+                    horizontalAlignment: Text.AlignHCenter
+                  }
+                }
               }
             }
+          }
+
+          PanelSectionHeader {
+            width: parent.width
+            text: Model.classLabel(root.strings, root.activeClass)
+            foreground: root.foreground
+            fontFamily: root.fontFamily
           }
 
           Text {

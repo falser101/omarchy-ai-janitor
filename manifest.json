@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.falser101.ai-janitor",
   "name": "AI Janitor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "falser101",
   "license": "MIT",
   "description": "See and trash reclaimable AI-tool caches, leftover installs, and optional session/model data. Cache / uninstalled / review tabs; per-tool switches.",
