@@ -46,7 +46,10 @@ function strings(localeName) {
     cache: zh ? "缓存" : "Cache",
     stale: zh ? "已卸工具" : "Uninstalled",
     review: zh ? "需确认" : "Review",
-    reclaim: zh ? "回收选中项" : "Reclaim selected",
+    reclaim: zh ? "清理选中" : "Clean selected",
+    cleanTab: zh ? "清理本页" : "Clean this tab",
+    cleanThis: zh ? "清理这项" : "Clean this tool",
+    cleaning: zh ? "正在清理…" : "Cleaning…",
     confirm: zh ? "进回收站" : "Move to trash",
     cancel: zh ? "取消" : "Cancel",
     warningReview: zh ? "会话、模型和记忆删了可能找不回。" : "Sessions, models, and memory may be unrecoverable.",
@@ -185,6 +188,35 @@ function toolAnySelected(group, selected) {
     if (selected && selected[items[i].id]) return true
   }
   return false
+}
+
+function groupIds(group) {
+  var ids = []
+  var items = group && group.items ? group.items : []
+  for (var i = 0; i < items.length; i++) {
+    if (items[i] && items[i].id) ids.push(String(items[i].id))
+  }
+  return ids
+}
+
+function tabIds(groups) {
+  var ids = []
+  var list = groups || []
+  for (var g = 0; g < list.length; g++) {
+    var part = groupIds(list[g])
+    for (var i = 0; i < part.length; i++) ids.push(part[i])
+  }
+  return ids
+}
+
+function bytesForIds(rows, ids) {
+  var wanted = {}
+  for (var i = 0; i < ids.length; i++) wanted[ids[i]] = true
+  var total = 0
+  for (var r = 0; r < rows.length; r++) {
+    if (wanted[rows[r].id]) total += Number(rows[r].bytes || 0)
+  }
+  return total
 }
 
 function toggleToolSelection(group, selected) {

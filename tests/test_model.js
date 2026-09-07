@@ -30,4 +30,9 @@ if (after.a1 || after.a2) throw new Error("toggling all-on should clear")
 const again = ctx.toggleToolSelection(cache[0], after)
 if (!again.a1 || !again.a2) throw new Error("toggling all-off should select")
 
+const ids = ctx.groupIds(cache[0])
+if (ids.join(",") !== "a1,a2") throw new Error("groupIds")
+if (ctx.bytesForIds(rows, ids) !== 150) throw new Error("bytesForIds")
+if (ctx.tabIds(cache).join(",") !== "a1,a2") throw new Error("tabIds")
+
 console.log("ok")

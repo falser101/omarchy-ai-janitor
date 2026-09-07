@@ -39,6 +39,7 @@ Panel {
   property int selectedRevision: 0
   property int expandedRevision: 0
   property bool confirming: false
+  property var pendingIds: []
   property string focusSection: "list"
   property int cursorIndex: 0
   property bool cursorActive: false
@@ -140,21 +141,38 @@ Panel {
   }
 
   function confirmMessage() {
-    var count = root.selectedIds.length
-    var size = Model.formatBytes(root.selectedBytes)
+    var ids = root.pendingIds
+    var count = ids.length
+    var size = Model.formatBytes(Model.bytesForIds(root.rows, ids))
     if (root.strings.zh)
       return "将 " + count + " 项（" + size + "）移到回收站？可从回收站还原。"
     return "Move " + count + " items (" + size + ") to trash? You can restore them from Trash."
   }
 
-  function requestClean() {
-    if (root.selectedIds.length === 0 || janitor.busy) return
+  function requestClean(ids) {
+    var list = ids && ids.length ? ids : root.selectedIds
+    if (!list.length) list = Model.tabIds(root.groups)
+    if (!list.length || janitor.busy) return
+    root.pendingIds = list
     root.confirming = true
   }
 
+  function requestCleanGroup(group) {
+    root.requestClean(Model.groupIds(group))
+  }
+
   function runClean() {
+    var ids = root.pendingIds
     root.confirming = false
-    janitor.cleanIds(root.selectedIds)
+    if (!ids.length) return
+    janitor.cleanIds(ids)
+  }
+
+  readonly property string cleanButtonText: {
+    if (janitor.cleaning || janitor.busy) return root.strings.cleaning
+    if (root.selectedIds.length > 0)
+      return root.strings.reclaim + " · " + Model.formatBytes(root.selectedBytes)
+    return root.strings.cleanTab + " · " + Model.formatBytes(Model.classBytes(janitor.report, root.activeClass))
   }
 
   function currentGroup() {
@@ -279,7 +297,7 @@ Panel {
     open: root.opened
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(420))
-    contentHeight: panel.fittedContentHeight(column.implicitHeight, Style.space(560))
+    contentHeight: panel.fittedContentHeight(Style.space(520), Style.space(560))
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -297,7 +315,11 @@ Panel {
 
       Flickable {
         id: panelFlick
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: footer.top
+        anchors.bottomMargin: Style.space(12)
         contentWidth: width
         contentHeight: column.implicitHeight
         clip: true
@@ -419,16 +441,6 @@ Panel {
           }
 
           Text {
-            visible: root.activeClass === "review" || root.reviewSelected
-            width: parent.width
-            text: root.strings.warningReview
-            color: root.urgent
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.caption
-            wrapMode: Text.WordWrap
-          }
-
-          Text {
             visible: root.groups.length === 0 && !janitor.loading
             width: parent.width
             text: Model.emptyForClass(root.strings, root.activeClass)
@@ -526,6 +538,17 @@ Panel {
                     }
                   }
 
+                  PanelActionButton {
+                    iconText: "󰩹"
+                    tooltipText: root.strings.cleanThis
+                    foreground: root.foreground
+                    hoverColor: root.urgent
+                    fontFamily: root.fontFamily
+                    enabled: !janitor.busy
+                    Layout.alignment: Qt.AlignVCenter
+                    onClicked: root.requestCleanGroup(modelData)
+                  }
+
                   ToggleSwitch {
                     checked: root.groupChecked(modelData)
                     foreground: root.foreground
@@ -565,19 +588,38 @@ Panel {
             }
           }
 
-          Button {
-            width: parent.width
-            text: root.strings.reclaim + " · " + Model.formatBytes(root.selectedBytes)
-            enabled: root.selectedIds.length > 0 && !janitor.busy
-            selected: root.cursorActive && root.focusSection === "action"
-            hasCursor: root.cursorActive && root.focusSection === "action"
-            foreground: root.foreground
-            onClicked: root.requestClean()
-            onHovered: function(isHovered) {
-              if (isHovered) {
-                root.cursorActive = true
-                root.focusSection = "action"
-              }
+        }
+      }
+
+      Column {
+        id: footer
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        spacing: Style.space(8)
+
+        Text {
+          visible: root.activeClass === "review" || root.reviewSelected
+          width: parent.width
+          text: root.strings.warningReview
+          color: root.urgent
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+          wrapMode: Text.WordWrap
+        }
+
+        Button {
+          width: parent.width
+          text: root.cleanButtonText
+          enabled: !janitor.busy && (root.selectedIds.length > 0 || root.groups.length > 0)
+          selected: root.cursorActive && root.focusSection === "action"
+          hasCursor: root.cursorActive && root.focusSection === "action"
+          foreground: root.foreground
+          onClicked: root.requestClean()
+          onHovered: function(isHovered) {
+            if (isHovered) {
+              root.cursorActive = true
+              root.focusSection = "action"
             }
           }
         }
