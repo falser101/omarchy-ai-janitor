@@ -40,6 +40,7 @@ Panel {
   property int expandedRevision: 0
   property bool confirming: false
   property var pendingIds: []
+  property bool selectionPrimed: false
   property string focusSection: "list"
   property int cursorIndex: 0
   property bool cursorActive: false
@@ -169,11 +170,18 @@ Panel {
   }
 
   readonly property string cleanButtonText: {
-    if (janitor.cleaning || janitor.busy) return root.strings.cleaning
     if (root.selectedIds.length > 0)
       return root.strings.reclaim + " · " + Model.formatBytes(root.selectedBytes)
     return root.strings.cleanTab + " · " + Model.formatBytes(Model.classBytes(janitor.report, root.activeClass))
   }
+  readonly property string progressText: Model.progressLabel(root.strings, {
+    total: janitor.cleanTotal,
+    done: janitor.cleanDone,
+    currentLabel: janitor.cleanCurrentLabel,
+    batchDone: janitor.batchDone,
+    batchTotal: janitor.batchTotal
+  })
+  readonly property string cleanedText: root.strings.cleaned + " " + Model.formatBytes(janitor.lastFreedBytes)
 
   function currentGroup() {
     if (root.cursorIndex < 0 || root.cursorIndex >= root.groups.length) return null
@@ -249,13 +257,31 @@ Panel {
     focusSection = "list"
     cursorIndex = 0
     if (panelFlick) panelFlick.contentY = 0
-    janitor.refresh(true)
+    var hasData = janitor.report && janitor.report.tools && janitor.report.tools.length > 0
+    janitor.refresh(true, hasData)
     Qt.callLater(function() { keyCatcher.forceActiveFocus() })
   }
 
   Connections {
     target: janitor
-    function onReportRevisionChanged() { root.resetSelection() }
+    function onReportRevisionChanged() {
+      if (!root.selectionPrimed && root.rows.length > 0) {
+        root.resetSelection()
+        root.selectionPrimed = true
+        return
+      }
+      root.selected = Model.pruneSelected(root.selected, root.rows)
+      root.selectedRevision += 1
+    }
+    function onActionStatusChanged() {
+      if (janitor.actionStatus === "ok") doneTimer.restart()
+    }
+  }
+
+  Timer {
+    id: doneTimer
+    interval: 2800
+    onTriggered: janitor.actionStatus = ""
   }
 
   Service {
@@ -432,15 +458,6 @@ Panel {
           }
 
           Text {
-            visible: janitor.actionStatus === "ok" && janitor.lastError === ""
-            width: parent.width
-            text: root.strings.done
-            color: root.dim
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.bodySmall
-          }
-
-          Text {
             visible: root.groups.length === 0 && !janitor.loading
             width: parent.width
             text: Model.emptyForClass(root.strings, root.activeClass)
@@ -462,6 +479,7 @@ Panel {
                 id: groupRow
                 width: parent.width
                 implicitHeight: groupContent.implicitHeight + Style.spacing.rowPaddingX
+                opacity: janitor.cleaning && janitor.cleanCurrentTool === modelData.toolId ? 0.55 : 1
                 hasCursor: root.cursorActive && root.focusSection === "list" && root.cursorIndex === index
                 foreground: root.foreground
 
@@ -544,7 +562,7 @@ Panel {
                     foreground: root.foreground
                     hoverColor: root.urgent
                     fontFamily: root.fontFamily
-                    enabled: !janitor.busy
+                    enabled: !janitor.cleaning && !janitor.busy
                     Layout.alignment: Qt.AlignVCenter
                     onClicked: root.requestCleanGroup(modelData)
                   }
@@ -553,6 +571,7 @@ Panel {
                     checked: root.groupChecked(modelData)
                     foreground: root.foreground
                     hasCursor: false
+                    enabled: !janitor.cleaning
                     Layout.alignment: Qt.AlignVCenter
                     onToggled: {
                       root.cursorActive = true
@@ -599,7 +618,7 @@ Panel {
         spacing: Style.space(8)
 
         Text {
-          visible: root.activeClass === "review" || root.reviewSelected
+          visible: !janitor.cleaning && (root.activeClass === "review" || root.reviewSelected)
           width: parent.width
           text: root.strings.warningReview
           color: root.urgent
@@ -608,7 +627,51 @@ Panel {
           wrapMode: Text.WordWrap
         }
 
+        Text {
+          visible: !janitor.cleaning && janitor.actionStatus === "ok" && janitor.lastError === ""
+          width: parent.width
+          text: root.cleanedText
+          color: root.dim
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.bodySmall
+        }
+
+        Column {
+          visible: janitor.cleaning
+          width: parent.width
+          spacing: Style.space(8)
+
+          Text {
+            width: parent.width
+            text: root.progressText
+            color: root.foreground
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            elide: Text.ElideRight
+          }
+
+          Item {
+            width: parent.width
+            height: Style.space(6)
+
+            Rectangle {
+              anchors.fill: parent
+              radius: height / 2
+              color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
+            }
+
+            Rectangle {
+              width: Math.max(Style.space(8), parent.width * janitor.cleanProgress)
+              height: parent.height
+              radius: height / 2
+              color: root.foreground
+              Behavior on width { NumberAnimation { duration: 120 } }
+            }
+          }
+        }
+
         Button {
+          visible: !janitor.cleaning
           width: parent.width
           text: root.cleanButtonText
           enabled: !janitor.busy && (root.selectedIds.length > 0 || root.groups.length > 0)

@@ -69,36 +69,88 @@ def clean(
     ids: list[str],
     catalog_path: Path | None = None,
     dry_run: bool = True,
+    on_event=None,
 ) -> dict:
     planned = plan_clean(home=home, ids=ids, catalog_path=catalog_path)
     results = []
     trashed_bytes = 0
+    total_bytes = sum(int(entry.get("bytes") or 0) for entry in planned)
+    _emit(on_event, {"event": "start", "count": len(planned), "bytes": total_bytes})
     for entry in planned:
         paths = [Path(p) for p in entry["paths"]]
+        _emit(
+            on_event,
+            {
+                "event": "item",
+                "status": "start",
+                "id": entry["id"],
+                "tool": entry.get("tool"),
+                "summary": entry.get("summary"),
+                "bytes": entry.get("bytes") or 0,
+                "count": entry.get("count") or 0,
+            },
+        )
         if dry_run:
             results.append({**entry, "trashed": False, "dryRun": True})
             trashed_bytes += int(entry["bytes"] or 0)
-            continue
-        trash_paths(paths)
-        results.append({**entry, "trashed": True, "dryRun": False})
-        trashed_bytes += int(entry["bytes"] or 0)
-        log_clean(home, entry)
-    return {
+        else:
+            trash_paths(
+                paths,
+                on_batch=lambda done, total, item_id=entry["id"]: _emit(
+                    on_event,
+                    {"event": "batch", "id": item_id, "done": done, "total": total},
+                ),
+            )
+            results.append({**entry, "trashed": True, "dryRun": False})
+            trashed_bytes += int(entry["bytes"] or 0)
+            log_clean(home, entry)
+        _emit(
+            on_event,
+            {
+                "event": "item",
+                "status": "done",
+                "id": entry["id"],
+                "tool": entry.get("tool"),
+                "summary": entry.get("summary"),
+                "bytes": entry.get("bytes") or 0,
+            },
+        )
+    result = {
         "ok": True,
         "dryRun": dry_run,
         "bytes": trashed_bytes,
         "items": results,
     }
+    if not dry_run:
+        _invalidate_scan_cache(home)
+    _emit(on_event, {"event": "done", "ok": True, "bytes": trashed_bytes, "count": len(results)})
+    return result
 
 
-def trash_paths(paths: list[Path]) -> None:
+def _emit(on_event, payload: dict) -> None:
+    if on_event is not None:
+        on_event(payload)
+
+
+def _invalidate_scan_cache(home: Path) -> None:
+    from .scan import cache_path
+
+    path = cache_path(home)
+    try:
+        path.unlink()
+    except OSError:
+        pass
+
+
+def trash_paths(paths: list[Path], on_batch=None) -> None:
     if not paths:
         return
     gio = shutil.which("gio")
     if not gio:
         raise CleanError("gio is not on PATH; refusing to delete without trash")
     existing = [str(p) for p in paths if p.exists()]
-    for i in range(0, len(existing), BATCH):
+    total = len(existing)
+    for i in range(0, total, BATCH):
         batch = existing[i : i + BATCH]
         completed = subprocess.run(
             [gio, "trash", "--", *batch],
@@ -110,6 +162,8 @@ def trash_paths(paths: list[Path]) -> None:
         if completed.returncode != 0:
             err = (completed.stderr or completed.stdout or "gio trash failed").strip()
             raise CleanError(err)
+        if on_batch is not None:
+            on_batch(min(i + BATCH, total), total)
 
 
 def log_clean(home: Path, entry: dict) -> None:

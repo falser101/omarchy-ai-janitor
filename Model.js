@@ -50,6 +50,7 @@ function strings(localeName) {
     cleanTab: zh ? "清理本页" : "Clean this tab",
     cleanThis: zh ? "清理这项" : "Clean this tool",
     cleaning: zh ? "正在清理…" : "Cleaning…",
+    cleaned: zh ? "已清理" : "Cleaned",
     confirm: zh ? "进回收站" : "Move to trash",
     cancel: zh ? "取消" : "Cancel",
     warningReview: zh ? "会话、模型和记忆删了可能找不回。" : "Sessions, models, and memory may be unrecoverable.",
@@ -207,6 +208,72 @@ function tabIds(groups) {
     for (var i = 0; i < part.length; i++) ids.push(part[i])
   }
   return ids
+}
+
+function dropItem(report, id) {
+  var source = report && typeof report === "object" ? report : emptyReport()
+  var next = {
+    scannedAt: source.scannedAt || "",
+    home: source.home || "",
+    totals: { bytes: 0, reclaimableCache: 0, reclaimableStale: 0, reclaimableReview: 0 },
+    tools: []
+  }
+  var tools = Array.isArray(source.tools) ? source.tools : []
+  for (var t = 0; t < tools.length; t++) {
+    var tool = tools[t]
+    var kept = []
+    var toolBytes = 0
+    var items = Array.isArray(tool.items) ? tool.items : []
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i]
+      if (!item || String(item.id) === String(id)) continue
+      kept.push(item)
+      var bytes = Number(item.bytes || 0)
+      toolBytes += bytes
+      next.totals.bytes += bytes
+      var klass = String(item.class || item.className || "")
+      if (klass === "cache") next.totals.reclaimableCache += bytes
+      else if (klass === "stale") next.totals.reclaimableStale += bytes
+      else if (klass === "review") next.totals.reclaimableReview += bytes
+    }
+    if (kept.length === 0) continue
+    next.tools.push({
+      id: tool.id,
+      name: tool.name,
+      status: tool.status,
+      bytes: toolBytes,
+      items: kept
+    })
+  }
+  return next
+}
+
+function pruneSelected(selected, rows) {
+  var live = {}
+  for (var i = 0; i < rows.length; i++) live[rows[i].id] = true
+  var next = {}
+  if (!selected) return next
+  for (var key in selected) {
+    if (selected[key] && live[key]) next[key] = true
+  }
+  return next
+}
+
+function progressLabel(strings, state) {
+  if (!state) return strings.cleaning
+  var label = String(state.currentLabel || "")
+  var batchTotal = Number(state.batchTotal || 0)
+  var batchDone = Number(state.batchDone || 0)
+  if (batchTotal > 1 && label) {
+    var pct = Math.max(0, Math.min(100, Math.round(100 * batchDone / batchTotal)))
+    return strings.cleaning + " " + label + "  " + pct + "%"
+  }
+  var total = Number(state.total || 0)
+  var done = Number(state.done || 0)
+  var head = strings.cleaning
+  if (total > 0) head += " " + done + "/" + total
+  if (label) head += " · " + label
+  return head
 }
 
 function bytesForIds(rows, ids) {

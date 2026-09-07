@@ -42,11 +42,25 @@ def main(argv: list[str] | None = None) -> int:
             print("Nothing to clean.")
             return 0
         dry_run = not args.yes
+
+        def emit_progress(event: dict) -> None:
+            print(json.dumps(event, ensure_ascii=False), flush=True)
+
         try:
-            result = clean(home=home, ids=ids, catalog_path=catalog_path, dry_run=dry_run)
+            result = clean(
+                home=home,
+                ids=ids,
+                catalog_path=catalog_path,
+                dry_run=dry_run,
+                on_event=emit_progress if args.progress else None,
+            )
         except CleanError as exc:
+            if args.progress:
+                print(json.dumps({"event": "error", "message": str(exc)}, ensure_ascii=False), flush=True)
             print(f"error: {exc}", file=sys.stderr)
             return 1
+        if args.progress:
+            return 0
         if args.json:
             print(json.dumps(result, ensure_ascii=False, indent=2))
         else:
@@ -82,6 +96,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--ids", help="Comma-separated item ids (clean)")
     parser.add_argument("--yes", action="store_true", help="Actually trash; without this, clean is dry-run")
     parser.add_argument("--dry-run", action="store_true", help="Explicit dry-run (the default for clean)")
+    parser.add_argument("--progress", action="store_true", help="Emit NDJSON progress events while cleaning")
     return parser
 
 

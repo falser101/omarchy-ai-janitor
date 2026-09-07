@@ -158,6 +158,48 @@ class JanitorTests(unittest.TestCase):
         self.assertTrue((self.home / ".demo" / "keep.txt").exists())
         self.assertTrue((self.trash / "cache").exists() or (self.trash / "a.bin").exists() or list(self.trash.iterdir()))
 
+    def test_clean_progress_events(self) -> None:
+        events = []
+        result = clean(
+            home=self.home,
+            ids=["demo-cache"],
+            catalog_path=self.catalog,
+            dry_run=False,
+            on_event=events.append,
+        )
+        kinds = [event.get("event") for event in events]
+        self.assertEqual(kinds[0], "start")
+        self.assertIn("item", kinds)
+        self.assertEqual(kinds[-1], "done")
+        self.assertTrue(result["ok"])
+        statuses = [event.get("status") for event in events if event.get("event") == "item"]
+        self.assertEqual(statuses, ["start", "done"])
+
+    def test_cli_progress_ndjson(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "ai-janitor"),
+                "clean",
+                "--yes",
+                "--progress",
+                "--ids",
+                "demo-glob",
+                "--home",
+                str(self.home),
+                "--catalog",
+                str(self.catalog),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        events = [json.loads(line) for line in completed.stdout.splitlines() if line.strip()]
+        self.assertEqual(events[0]["event"], "start")
+        self.assertEqual(events[-1]["event"], "done")
+        self.assertFalse((self.home / ".demo" / "clobbered.1").exists())
+
     def test_cli_clean_secret_exits_nonzero(self) -> None:
         completed = subprocess.run(
             [

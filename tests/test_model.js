@@ -35,4 +35,20 @@ if (ids.join(",") !== "a1,a2") throw new Error("groupIds")
 if (ctx.bytesForIds(rows, ids) !== 150) throw new Error("bytesForIds")
 if (ctx.tabIds(cache).join(",") !== "a1,a2") throw new Error("tabIds")
 
+const report = {
+  totals: { bytes: 359, reclaimableCache: 150, reclaimableStale: 200, reclaimableReview: 9 },
+  tools: [
+    { id: "grok", name: "Grok", items: [
+      { id: "a1", class: "cache", bytes: 100 },
+      { id: "a2", class: "cache", bytes: 50 }
+    ]},
+    { id: "trae", name: "Trae", items: [{ id: "b1", class: "stale", bytes: 200 }] }
+  ]
+}
+const dropped = ctx.dropItem(report, "a1")
+if (dropped.tools[0].items.length !== 1) throw new Error("dropItem should keep sibling")
+if (dropped.totals.reclaimableCache !== 50) throw new Error("dropItem totals")
+const pruned = ctx.pruneSelected({ a1: true, a2: true, b1: true }, [{ id: "a2" }])
+if (pruned.a1 || pruned.b1 || !pruned.a2) throw new Error("pruneSelected")
+
 console.log("ok")
