@@ -82,6 +82,7 @@ Panel {
   }
 
   function isExpanded(toolId) {
+    if (root.activeClass === "review") return true
     var _ = root.expandedRevision
     return !!(root.expanded && root.expanded[toolId])
   }
@@ -152,7 +153,8 @@ Panel {
 
   function requestClean(ids) {
     var list = ids && ids.length ? ids : root.selectedIds
-    if (!list.length) list = Model.tabIds(root.groups)
+    if (!list.length && root.activeClass !== "review")
+      list = Model.tabIds(root.groups)
     if (!list.length || janitor.busy) return
     root.pendingIds = list
     root.confirming = true
@@ -172,6 +174,7 @@ Panel {
   readonly property string cleanButtonText: {
     if (root.selectedIds.length > 0)
       return root.strings.reclaim + " · " + Model.formatBytes(root.selectedBytes)
+    if (root.activeClass === "review") return root.strings.selectFirst
     return root.strings.cleanTab + " · " + Model.formatBytes(Model.classBytes(janitor.report, root.activeClass))
   }
   readonly property string progressText: Model.progressLabel(root.strings, {
@@ -521,8 +524,9 @@ Panel {
                         root.cursorActive = true
                         root.focusSection = "list"
                         root.cursorIndex = index
-                        if (modelData.items.length > 1) root.toggleExpanded(modelData.toolId)
-                        else root.toggleGroup(modelData)
+                        if (modelData.items.length > 1) {
+                          if (root.activeClass !== "review") root.toggleExpanded(modelData.toolId)
+                        } else root.toggleGroup(modelData)
                       }
                     }
 
@@ -557,6 +561,7 @@ Panel {
                   }
 
                   PanelActionButton {
+                    visible: !(root.activeClass === "review" && modelData.items.length > 1)
                     iconText: "󰩹"
                     tooltipText: root.strings.cleanThis
                     foreground: root.foreground
@@ -592,15 +597,30 @@ Panel {
                 Repeater {
                   model: modelData.items
 
-                  Toggle {
+                  RowLayout {
                     required property var modelData
                     width: parent.width - parent.leftPadding
-                    label: root.itemSummary(modelData) + "  " + Model.formatBytes(modelData.bytes)
-                    description: modelData.path
-                    checked: root.isSelected(modelData.id)
-                    foreground: root.foreground
-                    fontFamily: root.fontFamily
-                    onClicked: root.toggleId(modelData.id)
+                    spacing: Style.space(8)
+
+                    Toggle {
+                      Layout.fillWidth: true
+                      label: root.itemSummary(modelData) + "  " + Model.formatBytes(modelData.bytes)
+                      description: modelData.path
+                      checked: root.isSelected(modelData.id)
+                      foreground: root.foreground
+                      fontFamily: root.fontFamily
+                      onClicked: root.toggleId(modelData.id)
+                    }
+
+                    PanelActionButton {
+                      iconText: "󰩹"
+                      tooltipText: root.strings.cleanThis
+                      foreground: root.foreground
+                      hoverColor: root.urgent
+                      fontFamily: root.fontFamily
+                      enabled: !janitor.cleaning && !janitor.busy
+                      onClicked: root.requestClean([modelData.id])
+                    }
                   }
                 }
               }
@@ -674,7 +694,7 @@ Panel {
           visible: !janitor.cleaning
           width: parent.width
           text: root.cleanButtonText
-          enabled: !janitor.busy && (root.selectedIds.length > 0 || root.groups.length > 0)
+          enabled: !janitor.busy && (root.selectedIds.length > 0 || (root.activeClass !== "review" && root.groups.length > 0))
           selected: root.cursorActive && root.focusSection === "action"
           hasCursor: root.cursorActive && root.focusSection === "action"
           foreground: root.foreground

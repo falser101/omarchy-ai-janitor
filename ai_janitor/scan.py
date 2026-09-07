@@ -5,8 +5,10 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .catalog import CLEANABLE, detect_status, load_catalog
+from .catalog import CHILD_SEP, CLEANABLE, child_label, detect_status, load_catalog, safe_child_name
 from .paths import is_inside_home, measure, resolve_pattern
+
+CHILD_SKIP = {"CACHEDIR.TAG", ".locks", ".DS_Store"}
 
 CACHE_NAME = "scan.json"
 DEFAULT_TTL_SEC = 600
@@ -57,31 +59,25 @@ def scan_fresh(*, home: Path, catalog_path: Path | None = None) -> dict:
                 for path in resolve_pattern(raw, home):
                     if is_inside_home(path, home):
                         resolved.append(path)
-            bytes_, mtime, count = measure(resolved)
-            if bytes_ <= 0 and count <= 0:
-                continue
-            tool_bytes += bytes_
-            totals["bytes"] += bytes_
-            if klass == "cache":
-                totals["reclaimableCache"] += bytes_
-            elif klass == "stale":
-                totals["reclaimableStale"] += bytes_
-            elif klass == "review":
-                totals["reclaimableReview"] += bytes_
-            items_out.append(
-                {
-                    "id": item["id"],
-                    "class": klass,
-                    "summary": item.get("summary") or item["id"],
-                    "summary_zh": item.get("summary_zh") or item.get("summary") or item["id"],
-                    "paths": [str(p) for p in resolved],
-                    "path": item["paths"][0],
-                    "bytes": bytes_,
-                    "count": count,
-                    "exists": True,
-                    "mtime": iso_from_mtime(mtime),
-                }
+            expanded = (
+                expand_children(item, resolved, home)
+                if item.get("expand") == "children"
+                else []
             )
+            rows = expanded or build_item_rows(item, resolved, home)
+            for row in rows:
+                bytes_ = int(row.get("bytes") or 0)
+                if bytes_ <= 0 and int(row.get("count") or 0) <= 0:
+                    continue
+                tool_bytes += bytes_
+                totals["bytes"] += bytes_
+                if klass == "cache":
+                    totals["reclaimableCache"] += bytes_
+                elif klass == "stale":
+                    totals["reclaimableStale"] += bytes_
+                elif klass == "review":
+                    totals["reclaimableReview"] += bytes_
+                items_out.append(row)
         if not items_out:
             continue
         tools_out.append(
@@ -99,6 +95,66 @@ def scan_fresh(*, home: Path, catalog_path: Path | None = None) -> dict:
         "totals": totals,
         "tools": tools_out,
     }
+
+
+def build_item_rows(item: dict, resolved: list[Path], home: Path) -> list[dict]:
+    bytes_, mtime, count = measure(resolved)
+    if bytes_ <= 0 and count <= 0:
+        return []
+    return [
+        {
+            "id": item["id"],
+            "class": item["class"],
+            "summary": item.get("summary") or item["id"],
+            "summary_zh": item.get("summary_zh") or item.get("summary") or item["id"],
+            "paths": [str(p) for p in resolved],
+            "path": item["paths"][0],
+            "bytes": bytes_,
+            "count": count,
+            "exists": True,
+            "mtime": iso_from_mtime(mtime),
+        }
+    ]
+
+
+def expand_children(item: dict, resolved: list[Path], home: Path) -> list[dict]:
+    rows = []
+    for parent in resolved:
+        if not parent.is_dir():
+            continue
+        try:
+            entries = list(os.scandir(parent))
+        except OSError:
+            continue
+        for entry in entries:
+            if entry.name in CHILD_SKIP or entry.name.startswith("."):
+                continue
+            if not safe_child_name(entry.name):
+                continue
+            child = Path(entry.path)
+            if not is_inside_home(child, home):
+                continue
+            bytes_, mtime, count = measure([child])
+            if bytes_ <= 0 and count <= 0:
+                continue
+            label = child_label(entry.name, home)
+            rows.append(
+                {
+                    "id": f"{item['id']}{CHILD_SEP}{entry.name}",
+                    "parentId": item["id"],
+                    "class": item["class"],
+                    "summary": label,
+                    "summary_zh": label,
+                    "paths": [str(child)],
+                    "path": str(child),
+                    "bytes": bytes_,
+                    "count": count,
+                    "exists": True,
+                    "mtime": iso_from_mtime(mtime),
+                }
+            )
+    rows.sort(key=lambda row: int(row.get("bytes") or 0), reverse=True)
+    return rows
 
 
 def iso_from_mtime(mtime: float) -> str | None:

@@ -50,6 +50,13 @@ FIXTURE_CATALOG = {
                     "summary": "Keep me",
                     "paths": ["~/.demo/keep.txt"],
                 },
+                {
+                    "id": "demo-sessions",
+                    "class": "review",
+                    "summary": "Sessions",
+                    "expand": "children",
+                    "paths": ["~/.demo/sessions"],
+                },
             ],
         }
     ],
@@ -69,6 +76,12 @@ class JanitorTests(unittest.TestCase):
         (demo / "clobbered.2").write_text("two")
         (demo / "auth.json").write_text('{"token":"secret"}')
         (demo / "keep.txt").write_text("keep")
+        sessions = demo / "sessions"
+        sessions.mkdir()
+        (sessions / "proj-a").mkdir()
+        (sessions / "proj-a" / "chat.jsonl").write_text("aaa")
+        (sessions / "proj-b").mkdir()
+        (sessions / "proj-b" / "chat.jsonl").write_text("bbbbbb")
         self.catalog = Path(self.tmp.name) / "catalog.json"
         self.catalog.write_text(json.dumps(FIXTURE_CATALOG), encoding="utf-8")
         self.trash = Path(self.tmp.name) / "trash"
@@ -112,6 +125,21 @@ class JanitorTests(unittest.TestCase):
         self.assertNotIn("demo-keep", ids)
         self.assertGreater(report["totals"]["reclaimableCache"], 0)
 
+    def test_expand_children_and_clean_one(self) -> None:
+        report = scan_fresh(home=self.home, catalog_path=self.catalog)
+        ids = [item["id"] for tool in report["tools"] for item in tool["items"]]
+        self.assertIn("demo-sessions::proj-a", ids)
+        self.assertIn("demo-sessions::proj-b", ids)
+        self.assertNotIn("demo-sessions", ids)
+        clean(
+            home=self.home,
+            ids=["demo-sessions::proj-a"],
+            catalog_path=self.catalog,
+            dry_run=False,
+        )
+        self.assertFalse((self.home / ".demo" / "sessions" / "proj-a").exists())
+        self.assertTrue((self.home / ".demo" / "sessions" / "proj-b").exists())
+
     def test_scan_safe_flag_via_cli(self) -> None:
         completed = subprocess.run(
             [
@@ -119,6 +147,7 @@ class JanitorTests(unittest.TestCase):
                 str(ROOT / "ai-janitor"),
                 "scan",
                 "--json",
+                "--safe",
                 "--fresh",
                 "--home",
                 str(self.home),

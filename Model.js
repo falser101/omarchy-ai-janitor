@@ -48,6 +48,7 @@ function strings(localeName) {
     review: zh ? "需确认" : "Review",
     reclaim: zh ? "清理选中" : "Clean selected",
     cleanTab: zh ? "清理本页" : "Clean this tab",
+    selectFirst: zh ? "先勾选要删的项" : "Select items first",
     cleanThis: zh ? "清理这项" : "Clean this tool",
     cleaning: zh ? "正在清理…" : "Cleaning…",
     cleaned: zh ? "已清理" : "Cleaned",

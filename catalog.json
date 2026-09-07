@@ -26,6 +26,7 @@
           "class": "review",
           "summary": "Chat session history",
           "summary_zh": "聊天会话记录",
+          "expand": "children",
           "paths": ["~/.grok/sessions"]
         },
         {
@@ -112,6 +113,7 @@
           "class": "review",
           "summary": "Project transcripts",
           "summary_zh": "项目会话记录",
+          "expand": "children",
           "paths": ["~/.claude/projects"]
         },
         {
@@ -147,6 +149,7 @@
           "class": "review",
           "summary": "Session transcripts",
           "summary_zh": "会话记录",
+          "expand": "children",
           "paths": ["~/.codex/sessions"]
         },
         {
@@ -324,6 +327,7 @@
           "class": "review",
           "summary": "Local models (offline Qwen gone if deleted)",
           "summary_zh": "本地模型（删了就不能离线跑 Qwen）",
+          "expand": "children",
           "paths": ["~/.ollama"]
         }
       ]
@@ -338,7 +342,8 @@
           "class": "review",
           "summary": "Whisper / transformer model cache",
           "summary_zh": "Whisper 等模型缓存",
-          "paths": ["~/.cache/huggingface"]
+          "expand": "children",
+          "paths": ["~/.cache/huggingface/hub"]
         }
       ]
     },
@@ -424,6 +429,7 @@
           "class": "review",
           "summary": "Memory palace (not recoverable)",
           "summary_zh": "记忆库（删了找不回）",
+          "expand": "children",
           "paths": ["~/.mempalace"]
         }
       ]

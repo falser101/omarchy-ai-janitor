@@ -6,7 +6,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .catalog import BLOCKED, CLEANABLE, index_items, load_catalog
+from .catalog import BLOCKED, CHILD_SEP, CLEANABLE, child_label, index_items, load_catalog, safe_child_name
 from .paths import is_inside_home, measure, resolve_pattern
 
 BATCH = 80
@@ -34,33 +34,70 @@ def plan_clean(
     index = index_items(catalog)
     planned = []
     for item_id in ids:
-        if item_id not in index:
-            raise CleanError(f"unknown item: {item_id}")
-        tool, item = index[item_id]
-        klass = item["class"]
-        if klass in BLOCKED:
-            raise CleanError(f"refusing to clean {klass} item: {item_id}")
-        if klass not in CLEANABLE:
-            raise CleanError(f"item is not cleanable: {item_id}")
+        planned.append(_plan_one(item_id, index, home))
+    return planned
+
+
+def _plan_one(item_id: str, index: dict, home: Path) -> dict:
+    parent_id, child_name = _split_id(item_id)
+    if parent_id not in index:
+        raise CleanError(f"unknown item: {item_id}")
+    tool, item = index[parent_id]
+    klass = item["class"]
+    if klass in BLOCKED:
+        raise CleanError(f"refusing to clean {klass} item: {item_id}")
+    if klass not in CLEANABLE:
+        raise CleanError(f"item is not cleanable: {item_id}")
+    if child_name is not None:
+        if item.get("expand") != "children":
+            raise CleanError(f"item is not expandable: {parent_id}")
+        if not safe_child_name(child_name):
+            raise CleanError(f"invalid child name: {child_name}")
+        resolved = _resolve_child(item, child_name, home)
+        if not resolved:
+            raise CleanError(f"child not found: {item_id}")
+    else:
         resolved = []
         for raw in item["paths"]:
             for path in resolve_pattern(raw, home):
                 if not is_inside_home(path, home):
                     raise CleanError(f"path escapes home: {path}")
                 resolved.append(path)
-        bytes_, _, count = measure(resolved)
-        planned.append(
-            {
-                "id": item_id,
-                "tool": tool["id"],
-                "class": klass,
-                "summary": item.get("summary") or item_id,
-                "paths": [str(p) for p in resolved],
-                "bytes": bytes_,
-                "count": count,
-            }
-        )
-    return planned
+    bytes_, _, count = measure(resolved)
+    summary = child_label(child_name, home) if child_name else (item.get("summary") or item_id)
+    return {
+        "id": item_id,
+        "tool": tool["id"],
+        "class": klass,
+        "summary": summary,
+        "paths": [str(p) for p in resolved],
+        "bytes": bytes_,
+        "count": count,
+    }
+
+
+def _split_id(item_id: str) -> tuple[str, str | None]:
+    if CHILD_SEP not in item_id:
+        return item_id, None
+    parent, child = item_id.split(CHILD_SEP, 1)
+    return parent, child
+
+
+def _resolve_child(item: dict, child_name: str, home: Path) -> list[Path]:
+    found = []
+    for raw in item["paths"]:
+        for parent in resolve_pattern(raw, home):
+            if not parent.is_dir() or not is_inside_home(parent, home):
+                continue
+            child = parent / child_name
+            try:
+                if child.resolve().parent != parent.resolve():
+                    continue
+            except OSError:
+                continue
+            if child.exists() and is_inside_home(child, home):
+                found.append(child)
+    return found
 
 
 def clean(

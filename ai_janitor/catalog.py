@@ -3,10 +3,43 @@ from __future__ import annotations
 import json
 import shutil
 from pathlib import Path
+from urllib.parse import unquote
 
 CLEANABLE = frozenset({"cache", "stale", "review"})
 BLOCKED = frozenset({"secret", "keep"})
 CLASSES = CLEANABLE | BLOCKED
+CHILD_SEP = "::"
+
+
+def safe_child_name(name: str) -> bool:
+    if not name or name in {".", ".."}:
+        return False
+    if "/" in name or "\\" in name or "\x00" in name:
+        return False
+    return True
+
+
+def child_label(name: str, home: Path) -> str:
+    text = unquote(name)
+    home_str = str(home)
+    if text == home_str or text.startswith(home_str + "/"):
+        rel = text[len(home_str) :].lstrip("/")
+        return "~/" + rel if rel else "~"
+    user = home.name
+    claude_prefix = f"-home-{user}"
+    if name.startswith(claude_prefix):
+        rest = name[len(claude_prefix) :].lstrip("-")
+        if not rest:
+            return "~"
+        for top in ("Projects", "Documents", "Downloads", "Work", "Desktop"):
+            if rest == top:
+                return "~/" + top
+            if rest.startswith(top + "-"):
+                return "~/" + top + "/" + rest[len(top) + 1 :]
+        return "~/" + rest
+    if name.startswith("models--"):
+        return name[len("models--") :].replace("--", "/")
+    return name
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CATALOG = ROOT / "catalog.json"
@@ -35,6 +68,9 @@ def _validate_tool(tool: dict) -> None:
         paths = item.get("paths")
         if not item_id or klass not in CLASSES or not isinstance(paths, list) or not paths:
             raise ValueError(f"bad item in {tool['id']}: {item_id}")
+        expand = item.get("expand")
+        if expand not in (None, "children"):
+            raise ValueError(f"bad expand on {item_id}")
         if item_id in seen:
             raise ValueError(f"duplicate item id: {item_id}")
         seen.add(item_id)
